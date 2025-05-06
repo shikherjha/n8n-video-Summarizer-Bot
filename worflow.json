@@ -1,0 +1,1011 @@
+{
+    "name": "My workflow 4",
+    "nodes": [
+      {
+        "parameters": {
+          "updates": [
+            "message"
+          ],
+          "additionalFields": {}
+        },
+        "id": "16aa7281-3dc5-440f-b0e9-53cba9badee5",
+        "name": "Telegram Trigger",
+        "type": "n8n-nodes-base.telegramTrigger",
+        "typeVersion": 1,
+        "position": [
+          -200,
+          -40
+        ],
+        "webhookId": "43a5390d-0d7e-4d82-9969-052e003d2fe9",
+        "credentials": {
+          "telegramApi": {
+            "id": "WIbJZdztU87qtd1h",
+            "name": "Telegram account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "string": [
+              {
+                "value1": "={{ $json.message.text }}",
+                "operation": "regex",
+                "value2": "^/research\\s+([^\\n]+)\\n(.+)$"
+              }
+            ]
+          }
+        },
+        "id": "9aaf24e3-1e05-4806-9ff8-a1a34856453e",
+        "name": "Check Valid Command",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 1,
+        "position": [
+          -40,
+          -40
+        ]
+      },
+      {
+        "parameters": {
+          "chatId": "={{ $node[\"Telegram Trigger\"].json.message.chat.id }}",
+          "text": "=I'm starting your research and \nScraping the provided URL\n\nPlease wait while I process your request...",
+          "additionalFields": {}
+        },
+        "id": "21ffbfbe-994f-43a7-8f17-282bb201c093",
+        "name": "Send Confirmation",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1,
+        "position": [
+          320,
+          20
+        ],
+        "webhookId": "51b0bbe6-dd49-4821-b819-883246bcdffa",
+        "credentials": {
+          "telegramApi": {
+            "id": "WIbJZdztU87qtd1h",
+            "name": "Telegram account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "chatId": "={{ $node[\"Telegram Trigger\"].json.message.chat.id }}",
+          "text": "=Invalid command format. Please use:\n\n/research Research Topic\nURL to scrape",
+          "additionalFields": {}
+        },
+        "id": "8c9fc9bb-3d74-4a46-b6ac-c455df8bbd51",
+        "name": "Send Error Message",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1,
+        "position": [
+          180,
+          -140
+        ],
+        "webhookId": "ed52bd35-ead0-4cf8-9efb-f7f6755abf8f",
+        "credentials": {
+          "telegramApi": {
+            "id": "WIbJZdztU87qtd1h",
+            "name": "Telegram account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "url": "={{ $json.message.link_preview_options.url }}",
+          "responseFormat": "string",
+          "options": {}
+        },
+        "id": "19e59923-3d5b-451a-92b5-1cef8be6706c",
+        "name": "HTTP Request",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 1,
+        "position": [
+          100,
+          460
+        ]
+      },
+      {
+        "parameters": {
+          "extractionValues": {
+            "values": [
+              {
+                "key": "extractedLinks",
+                "cssSelector": "=a[href]:not([href^=\"#\"]):not([href^=\"javascript:\"]):not([href^=\"mailto:\"]):not([href^=\"tel:\"])",
+                "returnValue": "attribute",
+                "attribute": "href",
+                "returnArray": true
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "0b89a370-0e3a-4a8e-ba52-b906a5fd40a6",
+        "name": "HTML Extract Links",
+        "type": "n8n-nodes-base.htmlExtract",
+        "typeVersion": 1,
+        "position": [
+          300,
+          480
+        ]
+      },
+      {
+        "parameters": {
+          "batchSize": 3,
+          "options": {}
+        },
+        "id": "fbe65d2f-e8db-4be3-8c03-a67356b81d1c",
+        "name": "Split Link Batches",
+        "type": "n8n-nodes-base.splitInBatches",
+        "typeVersion": 1,
+        "position": [
+          640,
+          840
+        ]
+      },
+      {
+        "parameters": {
+          "url": "={{$json.links}}",
+          "responseFormat": "string",
+          "options": {}
+        },
+        "id": "7d71a4ac-b66d-4dd6-88cf-637d0ce9667b",
+        "name": "HTTP Request (Subpages)",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 1,
+        "position": [
+          940,
+          840
+        ],
+        "alwaysOutputData": true,
+        "onError": "continueErrorOutput"
+      },
+      {
+        "parameters": {
+          "extractionValues": {
+            "values": [
+              {
+                "key": "content",
+                "cssSelector": "article, .post-content, .article-content, .content, main, #content"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "72dcd042-0949-471b-bdc8-0b102208e2ea",
+        "name": "Extract Content",
+        "type": "n8n-nodes-base.htmlExtract",
+        "typeVersion": 1,
+        "position": [
+          1100,
+          680
+        ]
+      },
+      {
+        "parameters": {
+          "mode": "mergeByIndex"
+        },
+        "id": "7f618625-4de6-41e2-bfb9-5a8898067157",
+        "name": "Merge All Content",
+        "type": "n8n-nodes-base.merge",
+        "typeVersion": 1,
+        "position": [
+          1260,
+          360
+        ]
+      },
+      {
+        "parameters": {
+          "authentication": "basicAuth",
+          "requestMethod": "POST",
+          "url": "https://api.d-id.com/talks",
+          "jsonParameters": true,
+          "options": {
+            "bodyContentType": "json"
+          },
+          "bodyParametersJson": "={\n  \"source_url\": \"https://i.postimg.cc/7YDkZ9mR/sample.png\",\n  \"script\": {\n    \"type\": \"text\",\n    \"input\":\"{{ $json.processedData.script.input }}\"\n  }\n}"
+        },
+        "id": "de552dd1-2c7a-476d-bf50-688632507897",
+        "name": "Create Talking Avatar",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 1,
+        "position": [
+          2080,
+          440
+        ],
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 5000,
+        "credentials": {
+          "httpBasicAuth": {
+            "id": "ItfXW6cePe3hqfjx",
+            "name": "D-id 1 "
+          }
+        }
+      },
+      {
+        "parameters": {
+          "authentication": "basicAuth",
+          "url": "={{ \"https://api.d-id.com/talks/\" + $json.talkId }}",
+          "options": {}
+        },
+        "id": "1de02cd1-27c7-464c-9209-5a22390e73f3",
+        "name": "Poll Video Status",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 1,
+        "position": [
+          2100,
+          740
+        ],
+        "credentials": {
+          "httpBasicAuth": {
+            "id": "ItfXW6cePe3hqfjx",
+            "name": "D-id 1 "
+          }
+        }
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "string": [
+              {
+                "value1": "={{ $json.status }}",
+                "operation": "notEqual",
+                "value2": "done"
+              }
+            ]
+          }
+        },
+        "id": "f8e3ce69-3706-4b32-9d27-7b2423b7e256",
+        "name": "Video Ready?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 1,
+        "position": [
+          1860,
+          920
+        ]
+      },
+      {
+        "parameters": {
+          "amount": 50,
+          "unit": "seconds"
+        },
+        "id": "e127fcae-4c8e-46df-afe5-33d3b9771fe7",
+        "name": "Wait",
+        "type": "n8n-nodes-base.wait",
+        "typeVersion": 1,
+        "position": [
+          1760,
+          660
+        ],
+        "webhookId": "7dbd839c-950b-4e99-980f-c21590ef91e7"
+      },
+      {
+        "parameters": {
+          "url": "={{ $json.result_url }}",
+          "responseFormat": "file",
+          "options": {}
+        },
+        "id": "8ccaa745-f576-42af-bf49-676755552eb5",
+        "name": "Download Video",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 1,
+        "position": [
+          2140,
+          940
+        ]
+      },
+      {
+        "parameters": {
+          "fileName": "={{ new Date().toISOString().replace(/[:.]/g, '-') + '.mp4' }}",
+          "dataPropertyName": "=data",
+          "options": {}
+        },
+        "id": "5ce366b8-1f71-415e-89b1-ea946bcb6a30",
+        "name": "Save Video File",
+        "type": "n8n-nodes-base.writeBinaryFile",
+        "typeVersion": 1,
+        "position": [
+          2360,
+          940
+        ]
+      },
+      {
+        "parameters": {
+          "resource": "video",
+          "operation": "upload",
+          "title": "Recent changes in Hardware World",
+          "regionCode": "IN",
+          "categoryId": "28",
+          "options": {}
+        },
+        "id": "789943e9-31ad-4267-9ff4-fbd88f0ea2c2",
+        "name": "Upload to YouTube",
+        "type": "n8n-nodes-base.youTube",
+        "typeVersion": 1,
+        "position": [
+          2640,
+          740
+        ],
+        "credentials": {
+          "youTubeOAuth2Api": {
+            "id": "NrmT55iVBj5rIxrY",
+            "name": "YouTube account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "chatId": "={{ $node[\"Telegram Trigger\"].json.message.chat.id }}",
+          "text": "={{ $json.videoUrl }}",
+          "additionalFields": {}
+        },
+        "id": "750beac6-f616-4f10-acd6-80cf00d32ea6",
+        "name": "Send Success Notification",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1,
+        "position": [
+          2900,
+          740
+        ],
+        "webhookId": "a054e100-1629-4db4-826e-d0b4a641e242",
+        "credentials": {
+          "telegramApi": {
+            "id": "WIbJZdztU87qtd1h",
+            "name": "Telegram account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "chatId": "={{ $json.chatId }}",
+          "text": "=The process encountered an error. Please try again later.",
+          "additionalFields": {}
+        },
+        "id": "847308e2-ff79-463b-a6e0-edec82b75b22",
+        "name": "Send Error Notification",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1,
+        "position": [
+          2600,
+          240
+        ],
+        "webhookId": "e65229d3-8d99-4b02-ab72-5120fed9deb9",
+        "credentials": {
+          "telegramApi": {
+            "id": "WIbJZdztU87qtd1h",
+            "name": "Telegram account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "fieldToSplitOut": "links",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.splitOut",
+        "typeVersion": 1,
+        "position": [
+          820,
+          680
+        ],
+        "id": "38df7cc6-88f0-4c57-a4ae-f6cbb7363837",
+        "name": "Split Out"
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "e9308c3b-c4f8-47ae-8c8c-5e886aaa555d",
+                "name": "OriginalUrl",
+                "value": "={{$json.message.link_preview_options.url}}",
+                "type": "string"
+              },
+              {
+                "id": "640132bf-816b-4358-9ef7-63b3f9bcd202",
+                "name": "researchTopic",
+                "value": "={{ $json.message.text }}",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          780,
+          80
+        ],
+        "id": "38f20abb-4373-4130-922e-e4cbba8dd113",
+        "name": "Preserve Metadata"
+      },
+      {
+        "parameters": {
+          "mode": "mergeByIndex"
+        },
+        "id": "6e17299e-7f5a-4f51-a6d3-93da1c150e7d",
+        "name": "Merge All Content1",
+        "type": "n8n-nodes-base.merge",
+        "typeVersion": 1,
+        "position": [
+          640,
+          480
+        ]
+      },
+      {
+        "parameters": {
+          "promptType": "define",
+          "text": "=Please write a concise summary about {{$json.researchTopic}} based on the following information:\n\n{{$json.scrapedContents[0].content}}\n\nThe summary should:\n\n- Include key fact\n- Be written in a professional tone\n- Be approximately 30-50 words\n- At maximum 50 words\n\n\nMake sure to maintain accuracy while expanding on the provided information.",
+          "messages": {
+            "messageValues": [
+              {
+                "message": "You are an expert content writer specializing in creating informative, well-researched articles. Focus on clarity, accuracy, and engaging explanations."
+              }
+            ]
+          }
+        },
+        "type": "@n8n/n8n-nodes-langchain.chainLlm",
+        "typeVersion": 1.6,
+        "position": [
+          1500,
+          340
+        ],
+        "id": "d6300b84-43ef-4276-b7f4-55683715fb47",
+        "name": "Basic LLM Chain"
+      },
+      {
+        "parameters": {
+          "options": {}
+        },
+        "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+        "typeVersion": 1,
+        "position": [
+          1560,
+          500
+        ],
+        "id": "6f4a24a0-09c0-4cbe-bbe3-1368b7da3693",
+        "name": "Groq Chat Model",
+        "credentials": {
+          "groqApi": {
+            "id": "g7mynu1ImchdZ4On",
+            "name": "Groq account"
+          }
+        }
+      },
+      {
+        "parameters": {},
+        "type": "n8n-nodes-base.merge",
+        "typeVersion": 3.1,
+        "position": [
+          1700,
+          40
+        ],
+        "id": "b5eaa821-8c34-4266-b950-8801bac9554d",
+        "name": "Merge"
+      },
+      {
+        "parameters": {
+          "language": "python",
+          "pythonCode": "def process_talk_id(items):\n    response_data = items[0][\"json\"]\n    \n    # Safe check for ID in various places it might be\n    talk_id = 'unknown'\n    if response_data:\n        if response_data.get(\"id\"):\n            talk_id = response_data[\"id\"]\n        elif response_data.get(\"result\") and response_data[\"result\"].get(\"id\"):\n            talk_id = response_data[\"result\"][\"id\"]\n    \n    # Return data in expected format\n    return [{\n        \"json\": {\n            \"talkId\": talk_id,\n            \"article\": items[0][\"json\"].get(\"data\", \"\"),\n            \"researchTopic\": items[0][\"json\"].get(\"researchTopic\", \"\"),\n            # Include full response for debugging\n            \"fullResponse\": response_data\n        }\n    }]\n\n# Direct return is required for n8n Python Code nodes\nreturn process_talk_id(items)"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2220,
+          540
+        ],
+        "id": "272c0429-4508-40e2-bfae-118baece5681",
+        "name": "Processing talk id"
+      },
+      {
+        "parameters": {
+          "language": "python",
+          "pythonCode": "def process_data(items):\n    \"\"\"\n    Process data for D-ID, cleaning all problematic characters\n    and formatting issues that might cause problems.\n    \"\"\"\n    # Get the input text\n    input_text = items[0][\"json\"][\"data\"]\n    \n    # Clean the text - handle all problematic patterns\n    cleaned_text = input_text\n    \n    # Remove literal newline sequences\n    cleaned_text = cleaned_text.replace(\"\\\\n\", \" \")\n    \n    # Remove the prefix pattern like \"Recent changes in the hardware world\":\"\n    if \"\\\":\" in cleaned_text:\n        cleaned_text = cleaned_text.split(\"\\\":\", 1)[1].strip()\n    \n    # Remove any remaining quotes at the beginning or end\n    cleaned_text = cleaned_text.strip('\"')\n    \n    # Return properly formatted data\n    return [\n        {\n            \"json\": {\n                \"processedData\": {\n                    \"source_url\": \"https://i.postimg.cc/7YDkZ9mR/sample.png\",\n                    \"script\": {\n                        \"type\": \"text\",\n                        \"input\": cleaned_text\n                    }\n                }\n            }\n        }\n    ]\n\n# Direct return is required for n8n Python Code nodes\nreturn process_data(items)"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1920,
+          480
+        ],
+        "id": "80bfa395-90bd-41ea-ab7f-29e257a2539e",
+        "name": "Preprocessing for d-id"
+      },
+      {
+        "parameters": {
+          "language": "python",
+          "pythonCode": "def prepare_context_for_llm(items):\n    # Collect content from each extracted page\n    collected_content = []\n    for item in items:\n        if item[\"json\"].get(\"content\"):\n            collected_content.append({\n                \"content\": item[\"json\"][\"content\"],\n                \"url\": item[\"json\"].get(\"url\", \"\")\n            })\n\n    # Get the research topic and URL from the first item\n    research_topic = items[0][\"json\"].get(\"researchTopic\", \"\")\n    url_to_scrape = items[0][\"json\"].get(\"OriginalUrl\", \"\")\n\n    # Create final output with all necessary data\n    return [{\n        \"json\": {\n            \"scrapedContents\": collected_content,\n            \"researchTopic\": research_topic,\n            \"urlToScrape\": url_to_scrape\n        }\n    }]\n\nreturn prepare_context_for_llm(items)"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1380,
+          580
+        ],
+        "id": "8cbe2426-5504-45db-b303-71a093cf0fa7",
+        "name": "Context for LLM"
+      },
+      {
+        "parameters": {
+          "language": "python",
+          "pythonCode": "def process_metadata_and_context(item, first_item):\n    article_text = item[\"json\"].get(\"text\", \"\")\n    research_topic = (\n        item[\"json\"].get(\"researchTopic\")\n        or first_item[\"json\"].get(\"researchTopic\")\n        or \"Research Topic\"\n    )\n    url_to_scrape = (\n        item[\"json\"].get(\"urlToScrape\")\n        or first_item[\"json\"].get(\"OriginalUrl\")\n        or \"URL\"\n    )\n    return {\n        \"json\": {\n            \"choices\": [\n                {\n                    \"message\": {\n                        \"content\": article_text\n                    }\n                }\n            ],\n            \"researchTopic\": research_topic,\n            \"urlToScrape\": url_to_scrape\n        }\n    }\n\n# This line accesses the predefined 'items' variable in n8n\n# No need to redefine it\n\nfirst_item = items[0] if items else {}\nprocessed_items = [process_metadata_and_context(item, first_item) for item in items]\n\n# In n8n, you need to return the processed items\nreturn processed_items"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1940,
+          40
+        ],
+        "id": "012c4147-6d6c-4ce7-9bcb-800163b6f08e",
+        "name": "Metadata + context"
+      },
+      {
+        "parameters": {
+          "language": "python",
+          "pythonCode": "def extract_video_link(items):\n    # Get the YouTube video ID from the previous node\n    video_id = items[0][\"json\"].get(\"uploadId\", \"\")  # Adjust property name if needed\n    \n    # Create a clean message with no special formatting issues\n    message = {\n        \"text\": f\"Your research video has been completed and uploaded to YouTube!\\n\\nVideo URL: https://youtube.com/shorts/{video_id}\",\n        \"videoUrl\": f\"https://youtube.com/shorts/{video_id}\"\n    }\n    \n    # Return the formatted data\n    return [{\"json\": message}]\n\n# Direct return is required for n8n Python Code nodes\nreturn extract_video_link(items)"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2760,
+          580
+        ],
+        "id": "e370d584-4c3f-4696-90a8-10c6fab9366f",
+        "name": "extracting video link"
+      },
+      {
+        "parameters": {
+          "language": "python",
+          "pythonCode": "import re\n\noutput = []\nfor item in items:\n    # Extract research topic and URL from the message\n    message = item[\"json\"][\"message\"][\"text\"]\n    regex = r\"^\\/research\\s+([^\\n]+)\\n(.+)$\"\n    match = re.match(regex, message)\n\n    if match:\n        research_topic = match.group(1).strip()\n        url_to_scrape = match.group(2).strip()\n        \n        output.append({\n            \"json\": {\n                \"researchTopic\": research_topic,\n                \"urlToScrape\": url_to_scrape,\n                \"message\": item[\"json\"][\"message\"]\n            }\n        })\n    else:\n        output.append(item)\n\nreturn output"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -100,
+          260
+        ],
+        "id": "d54308e1-8da7-40fe-b7e5-7a025aa51d2c",
+        "name": "extracting parameters"
+      },
+      {
+        "parameters": {
+          "language": "python",
+          "pythonCode": "import re\nfrom urllib.parse import urljoin\n\ndef process_urls(items):\n    # Get the original URL passed from the metadata\n    input_url = items[0][\"json\"].get(\"OriginalUrl\")\n    \n    # Fallback if for some reason originalUrl is missing\n    if not input_url:\n        raise ValueError(\"No originalUrl in incoming data\")\n    \n    # Pull out the origin (scheme + \"://\" + host[:port])\n    origin_match = re.match(r\"^(https?://[^/]+)\", input_url)\n    if not origin_match:\n        raise ValueError(f\"Invalid URL: {input_url}\")\n    \n    base_url = origin_match.group(1)\n    \n    # Extract the links from previous node (HTML Extract Links)\n    links = items[0][\"json\"].get(\"extractedLinks\", [])\n    \n    results = []\n    for link in links:\n        # Convert relative link to absolute\n        if not re.match(r\"^https?://\", link, re.IGNORECASE):\n            # Use urljoin for proper URL joining\n            full_link = urljoin(base_url, link)\n        else:\n            full_link = link\n            \n        results.append({\n            \"json\": {\n                \"links\": full_link\n            }\n        })\n    \n    return results\n\n# Call the function and return the result\nreturn process_urls(items)"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          440,
+          820
+        ],
+        "id": "fceb2054-5f49-4203-95c9-046feb4f8963",
+        "name": "url processing"
+      },
+      {
+        "parameters": {
+          "language": "python",
+          "pythonCode": "\"\"\"\nThis function extracts article text from Groq API response in n8n.\n\"\"\"\n\n# The 'items' variable contains the input items\n# The 'result' variable must be set to the output items\n\n# Initialize output array\nresult = []\n\nfor item in items:\n    # Extract the response data from input\n    response_data = item.json\n    \n    # Validate response structure\n    if (not response_data or \n        'choices' not in response_data or \n        not response_data.get('choices') or \n        'message' not in response_data['choices'][0] or \n        'content' not in response_data['choices'][0]['message']):\n        raise Exception('Invalid response from Groq API')\n    \n    # Extract article text\n    article_text = response_data['choices'][0]['message']['content']\n    \n    # Create output item and add to result array\n    result.append({\n        'json': {\n            'data': article_text,\n            'researchTopic': response_data.get('researchTopic', ''),\n            'urlToScrape': response_data.get('urlToScrape', '')\n        }\n    })\n\nreturn result"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1940,
+          240
+        ],
+        "id": "b743d15b-fb94-453f-aea6-70e6358be305",
+        "name": "Code"
+      },
+      {
+        "parameters": {
+          "language": "python",
+          "pythonCode": "from datetime import datetime\n\ndef handle_error(item, nodes):\n    # Error handling function\n    error_message = item[\"json\"].get(\"message\", \"An unknown error occurred\")\n    \n    # Get chat ID from Telegram Trigger node\n    chat_id = nodes[\"Telegram Trigger\"][\"json\"][\"message\"][\"chat\"][\"id\"]\n    \n    return {\n        \"json\": {\n            \"error\": True,\n            \"errorMessage\": error_message,\n            \"step\": item[\"json\"].get(\"step\", \"unknown\"),\n            \"timestamp\": datetime.now().isoformat(),\n            \"chatId\": chat_id\n        }\n    }\n\n# Process each item in the input array\nresult = []\nfor item in items:\n    result.append(handle_error(item, $node[\"nodes\"]))\n\n# Direct return is required for n8n Python Code nodes\nreturn result"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2600,
+          460
+        ],
+        "id": "52496420-c9e4-405f-9b7b-ed3f9ab025f6",
+        "name": "Error handler"
+      }
+    ],
+    "pinData": {},
+    "connections": {
+      "Telegram Trigger": {
+        "main": [
+          [
+            {
+              "node": "Check Valid Command",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Check Valid Command": {
+        "main": [
+          [
+            {
+              "node": "Send Error Message",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "extracting parameters",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "HTTP Request": {
+        "main": [
+          [
+            {
+              "node": "HTML Extract Links",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "HTML Extract Links": {
+        "main": [
+          [
+            {
+              "node": "Merge All Content1",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Split Link Batches": {
+        "main": [
+          [
+            {
+              "node": "Split Out",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "HTTP Request (Subpages)": {
+        "main": [
+          [
+            {
+              "node": "Extract Content",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Extract Content": {
+        "main": [
+          [
+            {
+              "node": "Merge All Content",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Create Talking Avatar": {
+        "main": [
+          [
+            {
+              "node": "Processing talk id",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Error handler",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Poll Video Status": {
+        "main": [
+          [
+            {
+              "node": "Video Ready?",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Error handler",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Video Ready?": {
+        "main": [
+          [
+            {
+              "node": "Wait",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Download Video",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Wait": {
+        "main": [
+          [
+            {
+              "node": "Poll Video Status",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Download Video": {
+        "main": [
+          [
+            {
+              "node": "Save Video File",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Error handler",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Save Video File": {
+        "main": [
+          [
+            {
+              "node": "Upload to YouTube",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Upload to YouTube": {
+        "main": [
+          [
+            {
+              "node": "extracting video link",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Error handler",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Merge All Content": {
+        "main": [
+          [
+            {
+              "node": "Context for LLM",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Split Out": {
+        "main": [
+          [
+            {
+              "node": "HTTP Request (Subpages)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Preserve Metadata": {
+        "main": [
+          [
+            {
+              "node": "Merge All Content1",
+              "type": "main",
+              "index": 1
+            },
+            {
+              "node": "Merge All Content",
+              "type": "main",
+              "index": 1
+            },
+            {
+              "node": "Merge",
+              "type": "main",
+              "index": 1
+            }
+          ]
+        ]
+      },
+      "Merge All Content1": {
+        "main": [
+          [
+            {
+              "node": "url processing",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Groq Chat Model": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "Basic LLM Chain",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Basic LLM Chain": {
+        "main": [
+          [
+            {
+              "node": "Merge",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Merge": {
+        "main": [
+          [
+            {
+              "node": "Metadata + context",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Processing talk id": {
+        "main": [
+          [
+            {
+              "node": "Poll Video Status",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Preprocessing for d-id": {
+        "main": [
+          [
+            {
+              "node": "Create Talking Avatar",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Context for LLM": {
+        "main": [
+          [
+            {
+              "node": "Basic LLM Chain",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Metadata + context": {
+        "main": [
+          [
+            {
+              "node": "Code",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "extracting video link": {
+        "main": [
+          [
+            {
+              "node": "Send Success Notification",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "extracting parameters": {
+        "main": [
+          [
+            {
+              "node": "HTTP Request",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Preserve Metadata",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Send Confirmation",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "url processing": {
+        "main": [
+          [
+            {
+              "node": "Split Link Batches",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Code": {
+        "main": [
+          [
+            {
+              "node": "Preprocessing for d-id",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Error handler": {
+        "main": [
+          [
+            {
+              "node": "Send Error Notification",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "active": false,
+    "settings": {
+      "executionOrder": "v1"
+    },
+    "versionId": "14a2f2f2-354b-496d-ba9d-1c53f526aef5",
+    "meta": {
+      "instanceId": "5151a7c175c6385e914c84baa01efeaf8c481c46a08d70ce944cec098586cc73"
+    },
+    "id": "qAz3NgNYiqfO8kFo",
+    "tags": []
+  }
