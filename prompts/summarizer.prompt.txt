@@ -1,0 +1,12 @@
+Analyze {{$json.researchTopic}} and provide only a direct summary based on:
+{{$json.scrapedContents[0].content}}
+
+Your response must:
+- Start immediately with the summary content - no introductions or preambles
+- Include key facts only
+- Use professional language
+- Be 30-50 words maximum
+- Contain no quotation marks, no "Here is a summary" phrases, and no ending notes
+- Return only plain text with no special formatting
+
+Important: Output only the summary text itself with no additional text before or after.
