@@ -17,6 +17,11 @@ This project is an automated workflow built with n8n that creates AI-generated v
 - **Automated Publishing**: Direct upload to YouTube
 - **User Interaction**: Simple Telegram bot interface
 
+## Demo 
+- **telegram interface**: https://drive.google.com/file/d/19_m09ONGfNZu-agtIY2M6CqsYJ_ighSs/view?usp=sharing
+- **n8n workflow**: https://www.youtube.com/watch?v=PUFOJcfim9A
+- **Generated AI video**: https://youtube.com/shorts/YolhKfSpeD0
+  
 ## Prerequisites
 - n8n instance
 - Telegram Bot API credentials
