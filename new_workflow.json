@@ -1,0 +1,660 @@
+{
+  "name": "n8n summarizer",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -500,
+        -20
+      ],
+      "id": "573893c4-9482-43e7-9195-a34488a82d05",
+      "name": "Telegram Trigger",
+      "webhookId": "8f37c6ce-1114-4c53-a8ec-b6bbbb513715",
+      "credentials": {
+        "telegramApi": {
+          "id": "3wal8f5O8Dook9tN",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message.text }}",
+                    "rightValue": "/start",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "40c21081-a869-4b5a-90cb-b3e434e72200"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "start"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "cd87fe65-6e3e-4615-a0bd-ba5a93bc1a6c",
+                    "leftValue": "={{ $json.message.text }}",
+                    "rightValue": "^research topic:\\s*(.+)\\nUrl:\\s*(\\S+)$",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notRegex"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Error"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "3b5ac8bf-4432-4a6c-abd5-68085ca17427",
+                    "leftValue": "={{ $json.message.text }}",
+                    "rightValue": "^research topic:\\s*(.+)\\nUrl:\\s*(\\S+)$",
+                    "operator": {
+                      "type": "string",
+                      "operation": "regex"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "No error"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -260,
+        -20
+      ],
+      "id": "33661f07-3802-43b6-9e0e-c3a8089542eb",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.message.chat.id }}",
+        "text": "=Ready to create your first video.......\nSend your query as:\nresearch topic: xyz\nurl: xyz.abc\n\nNote: Provide query in the same template as it is as mentioned above.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        80,
+        -360
+      ],
+      "id": "04beb30e-8594-4e95-b629-b9290a2f0950",
+      "name": "Default start message",
+      "webhookId": "0a537d62-0d08-4d02-8dc3-ae6b0faa0a11",
+      "credentials": {
+        "telegramApi": {
+          "id": "3wal8f5O8Dook9tN",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.message.chat.id }}",
+        "text": "=Invalid query input!!\nPlease check the query format, follow the query format template example given below:\n\nresearch topic: Recent changes in Hardware world\nurl: https://www.vastdata.com/blog\n\n\nNote: REPLACE RESEARCH TOPIC AND URL FIELD ACCORDING TO YOUR CHOICE...",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        80,
+        -20
+      ],
+      "id": "264d5328-e379-4ff0-8750-a7e5cbf25225",
+      "name": "Error message",
+      "webhookId": "0f91f6aa-967b-4644-a3d7-988fd63dcf10",
+      "credentials": {
+        "telegramApi": {
+          "id": "3wal8f5O8Dook9tN",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "language": "python",
+        "pythonCode": "import re\n\noutput = []\nfor item in items:\n    # Extract research topic and URL from the message\n    message = item[\"json\"][\"message\"][\"text\"]\n    regex = r\"^^research topic:\\s*(.+)\\nUrl:\\s*(\\S+)$\"\n    match = re.match(regex, message)\n\n    if match:\n        research_topic = match.group(1).strip()\n        url_to_scrape = match.group(2).strip()\n        \n        output.append({\n            \"json\": {\n                \"researchTopic\": research_topic,\n                \"urlToScrape\": url_to_scrape,\n                \"message\": item[\"json\"][\"message\"]\n            }\n        })\n    else:\n        output.append(item)\n\nreturn output"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -80,
+        420
+      ],
+      "id": "39cefcf7-9d48-48a5-97fb-3de236fd0190",
+      "name": "extracting parameters"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.firecrawl.dev/v1/scrape",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"url\": \"{{ $json.urlToScrape }}\",\n  \"formats\": [ \"markdown\", \"screenshot@fullPage\" ],\n  \"onlyMainContent\": true\n}",
+        "options": {}
+      },
+      "id": "2411e6de-9913-4f92-9650-3408598e8332",
+      "name": "scrape URL (Firecrawl)",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        120,
+        420
+      ],
+      "retryOnFail": true,
+      "typeVersion": 4.2,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "X9b4jhgfKtWmVpTl",
+          "name": "FireCrawl"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Please write a concise summary about {{ $('extracting parameters').item.json.researchTopic }} based on the following information:\n\n{{ $json.data.markdown }}\n\nThe summary should:\n\n- Include key fact\n- Be written in a professional tone\n- Be approximately 30-50 words\n- At maximum 50 words\n\n\nMake sure to maintain accuracy while expanding on the provided information.",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        300,
+        340
+      ],
+      "id": "70364d13-9cc2-4449-8a7e-4d22320d7e42",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-1.5-flash-latest",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        280,
+        580
+      ],
+      "id": "af3ee3fa-41e6-4dfb-a3ca-77ef0f633e20",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "9Nc3XLVuCTof7xBS",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "basicAuth",
+        "requestMethod": "POST",
+        "url": "https://api.d-id.com/talks",
+        "jsonParameters": true,
+        "options": {
+          "bodyContentType": "json"
+        },
+        "bodyParametersJson": "={\n  \"source_url\": \"https://i.postimg.cc/7YDkZ9mR/sample.png\",\n  \"script\": {\n    \"type\": \"text\",\n    \"input\":\"{{ $json.text }}\"\n  }\n}"
+      },
+      "id": "7df6fc73-d3fa-4cab-a694-c5671b241550",
+      "name": "Create Talking Avatar",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        720,
+        340
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "ViSZaSggbF74xCOf",
+          "name": "Unnamed credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "basicAuth",
+        "url": "={{ \"https://api.d-id.com/talks/\" + $json.talkId }}",
+        "options": {}
+      },
+      "id": "86f26966-99d3-4fcd-9730-59794608c5dd",
+      "name": "Poll Video Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        1300,
+        340
+      ],
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "ViSZaSggbF74xCOf",
+          "name": "Unnamed credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.status }}",
+              "value2": "done"
+            }
+          ]
+        }
+      },
+      "id": "5af4bcc1-3d57-4049-a70d-6a8bf7788074",
+      "name": "Video Ready?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        720,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.result_url }}",
+        "responseFormat": "file",
+        "options": {}
+      },
+      "id": "f3618d58-20bd-4e05-a32e-78ef6247d7ea",
+      "name": "Download Video",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        1160,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "fileName": "={{ new Date().toISOString().replace(/[:.]/g, '-') + '.mp4' }}",
+        "options": {}
+      },
+      "id": "3cbb3bdd-d6f4-4cf7-bbc1-04e2fb980c67",
+      "name": "Save Video File",
+      "type": "n8n-nodes-base.writeBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        1360,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "language": "python",
+        "pythonCode": "def process_talk_id(items):\n    response_data = items[0][\"json\"]\n    \n    # Safe check for ID in various places it might be\n    talk_id = 'unknown'\n    if response_data:\n        if response_data.get(\"id\"):\n            talk_id = response_data[\"id\"]\n        elif response_data.get(\"result\") and response_data[\"result\"].get(\"id\"):\n            talk_id = response_data[\"result\"][\"id\"]\n    \n    # Return data in expected format\n    return [{\n        \"json\": {\n            \"talkId\": talk_id,\n            \"article\": items[0][\"json\"].get(\"data\", \"\"),\n            \"researchTopic\": items[0][\"json\"].get(\"researchTopic\", \"\"),\n            # Include full response for debugging\n            \"fullResponse\": response_data\n        }\n    }]\n\n# Direct return is required for n8n Python Code nodes\nreturn process_talk_id(items)"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        340
+      ],
+      "id": "2ee002e5-99fb-48ab-91d8-a9645c186e4d",
+      "name": "Processing talk id"
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "operation": "upload",
+        "title": "={{ $('extracting parameters').item.json.researchTopic }}",
+        "regionCode": "IN",
+        "categoryId": "28",
+        "options": {}
+      },
+      "id": "7cef3032-b160-40fd-8af6-63465caa217c",
+      "name": "Upload to YouTube",
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [
+        1580,
+        200
+      ],
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "UXZo4rbU21SaYQOX",
+          "name": "YouTube account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "language": "python",
+        "pythonCode": "def extract_video_link(items):\n    # Get the YouTube video ID from the previous node\n    video_id = items[0][\"json\"].get(\"uploadId\", \"\")  # Adjust property name if needed\n    \n    # Create a clean message with no special formatting issues\n    message = {\n        \"text\": f\"Your research video has been completed and uploaded to YouTube!\\n\\nVideo URL: https://youtube.com/shorts/{video_id}\",\n        \"videoUrl\": f\"https://youtube.com/shorts/{video_id}\"\n    }\n    \n    # Return the formatted data\n    return [{\"json\": message}]\n\n# Direct return is required for n8n Python Code nodes\nreturn extract_video_link(items)"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1760,
+        200
+      ],
+      "id": "216582da-cbd1-49f0-8c46-f2f2225be45f",
+      "name": "extracting video link"
+    },
+    {
+      "parameters": {
+        "amount": 45,
+        "unit": "seconds"
+      },
+      "id": "4625e8e0-528d-4a50-ba25-ebbcdca995d4",
+      "name": "45s wait",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        1060,
+        340
+      ],
+      "webhookId": "7dbd839c-950b-4e99-980f-c21590ef91e7"
+    },
+    {
+      "parameters": {
+        "amount": 15,
+        "unit": "seconds"
+      },
+      "id": "a02c1d14-e420-49b9-9dcf-802851f1a6ea",
+      "name": "15s wait",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        940,
+        160
+      ],
+      "webhookId": "7dbd839c-950b-4e99-980f-c21590ef91e7"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.text }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1960,
+        200
+      ],
+      "id": "1dc4babc-c90a-43e3-a4a3-7e422fdc2b8e",
+      "name": "Success message with Link",
+      "webhookId": "c2f953b7-03c1-4f25-ba77-59f252cc29da",
+      "credentials": {
+        "telegramApi": {
+          "id": "3wal8f5O8Dook9tN",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Default start message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "extracting parameters",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "extracting parameters": {
+      "main": [
+        [
+          {
+            "node": "scrape URL (Firecrawl)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "scrape URL (Firecrawl)": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Create Talking Avatar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Poll Video Status": {
+      "main": [
+        [
+          {
+            "node": "Video Ready?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Video Ready?": {
+      "main": [
+        [
+          {
+            "node": "Download Video",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "15s wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Video": {
+      "main": [
+        [
+          {
+            "node": "Save Video File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Processing talk id": {
+      "main": [
+        [
+          {
+            "node": "45s wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Talking Avatar": {
+      "main": [
+        [
+          {
+            "node": "Processing talk id",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Video File": {
+      "main": [
+        [
+          {
+            "node": "Upload to YouTube",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload to YouTube": {
+      "main": [
+        [
+          {
+            "node": "extracting video link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "extracting video link": {
+      "main": [
+        [
+          {
+            "node": "Success message with Link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "45s wait": {
+      "main": [
+        [
+          {
+            "node": "Poll Video Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "15s wait": {
+      "main": [
+        [
+          {
+            "node": "Poll Video Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "14bd160b-3dea-4c59-ba32-3994951a0c00",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "17b7a2522aa24307216d51dc0e3e9f3169915293b2c9744121a8e7ee4ab592a1"
+  },
+  "id": "F9qK9kgJWXYRusCs",
+  "tags": []
+}
