@@ -1,88 +1,116 @@
 # n8n Video Summarizer Bot
 
-## Overview
-This project is an automated workflow built with n8n that creates AI-generated video summaries from web content. The workflow:
+An n8n automation that transforms web content into AI‑generated video summaries. This repo hosts two workflows:
 
-1. Accepts a URL and research topic via Telegram bot command
-2. Scrapes the provided webpage and related subpages
-3. Generates a concise research summary using Groq LLM
-4. Creates a talking avatar video using D-ID API
-5. Uploads the video to YouTube
-6. Sends the YouTube link back to the user via Telegram
+1. **Legacy**: Groq LLM + D‑ID API (custom scraping and processing)
+2. **Optimized**: Firecrawl Scrape + Google Gemini (streamlined and recommended)
 
-## Features
-- **Web Scraping**: Extracts content from multiple pages
-- **AI Summarization**: Uses Groq LLM to create concise summaries
-- **AI Video Generation**: Creates talking avatar videos using D-ID
-- **Automated Publishing**: Direct upload to YouTube
-- **User Interaction**: Simple Telegram bot interface
+---
 
-## Demo 
-- **telegram interface**: https://drive.google.com/file/d/19_m09ONGfNZu-agtIY2M6CqsYJ_ighSs/view?usp=sharing
-- **n8n workflow**: https://www.youtube.com/watch?v=PUFOJcfim9A
-- **Generated AI video**: https://youtube.com/shorts/YolhKfSpeD0
-  
-## Prerequisites
-- n8n instance
-- Telegram Bot API credentials
-- D-ID API credentials
-- Groq API credentials
-- YouTube API credentials
+## 🚀 Overview
 
-## Setup
+Both workflows follow the same high‑level pipeline:
 
-### 1. n8n Setup
-1. Install n8n using npm:
-   ```
-   npm install n8n -g
-   ```
-2. Start n8n:
-   ```
-   n8n start
-   ```
+1. **Telegram Command**: `/research <Topic>\n<URL>`
+2. **Scrape**: Fetch markdown (and screenshot) of the page
+3. **Summarize**: Generate concise research summary via LLM
+4. **Video**: Create talking avatar video
+5. **Publish**: Upload to YouTube
+6. **Reply**: Send the video link back on Telegram
 
-### 2. Import Workflow
-1. Navigate to n8n dashboard
-2. Go to Workflows → Import From File
-3. Select `workflows/summarize_video.json`
+Use the **Optimized** version for simplicity; the Legacy flow remains available if you need its Groq+DIY scraping approach.
 
-### 3. Configure Credentials
-Configure the following credentials in n8n:
-- Telegram Bot API
-- D-ID API
-- Groq API
-- YouTube API
+---
 
-### 4. Configure Webhook
-1. Enable the Telegram Trigger node
-2. Set up webhook for your Telegram bot using the provided URL
+## 📁 Repository Structure
 
-## Usage
-Send a command to your Telegram bot in this format:
 ```
-/research Research Topic
-https://example.com/page-to-summarize
+├── workflows/
+│   ├── original_workflow.json       # Legacy Groq + D‑ID version (custom HTTP + HTML extract)
+│   └── new_workflow.json            # Optimized Firecrawl + Gemini version
+├── docs/
+│   └── architecture.md              # Architecture and node-by-node breakdown
+└── README.md                        # This file
 ```
 
-The bot will:
-1. Acknowledge your request
-2. Process the webpage
-3. Generate a summary
-4. Create a video
-5. Upload to YouTube
-6. Send you the YouTube link
+---
 
-## Architecture
-This workflow uses several interconnected n8n nodes:
-- Telegram Trigger: Receives commands from users
-- HTTP Request: Scrapes web content
-- HTML Extract: Parses content from HTML
-- Code nodes: Process data between steps
-- Groq/LangChain: Generates summaries
-- D-ID API: Creates talking avatar videos
-- YouTube integration: Uploads videos
+## 🔧 Prerequisites
 
-See `docs/architecture.md` for detailed architecture information.
+* **n8n** (Cloud or self‑hosted)
+* **Telegram Bot** token
+* **YouTube** Data API credentials
 
-## License
-[MIT](LICENSE)
+### Legacy Flow
+
+* **Groq** API credentials
+* **D‑ID** API credentials
+* (Built‑in HTTP Request + HTML Extract nodes for scraping)
+
+### Optimized Flow
+
+* **Firecrawl** API Key
+* **Google Cloud** credentials (Gemini Chat)
+* (Optional) **Avatar API** credentials if not using D‑ID
+
+---
+
+## ⚙️ Legacy Workflow (Groq + D‑ID)
+
+1. **Import** `workflows/original_workflow.json`
+2. **Configure** credentials: Telegram, Groq, D‑ID, YouTube
+3. The workflow uses:
+
+   * **HTTP Request** & **HTML Extract** nodes to scrape the page
+   * **Groq LLM** to summarize content
+   * **D‑ID API** to generate talking‑avatar video
+   * **YouTube Node** to publish
+4. **Activate** Telegram Trigger and send `/research` to run.
+
+---
+
+## ⚡️ Optimized Workflow (Firecrawl + Gemini)
+
+1. **Import** `workflows/new_workflow.json`
+2. **Configure** credentials: Telegram, Firecrawl, Google Cloud (Gemini), YouTube
+3. **Activate** Telegram Trigger
+4. **Usage**: Send `/research` and let it run through Firecrawl & Gemini.
+
+### Firecrawl Scrape Node
+
+* **Endpoint**: `POST https://api.firecrawl.dev/v1/scrape`
+* **Body** (JSON):
+
+  ```json
+  {
+    "url": "{{ $json.urlToScrape }}",
+    "formats": ["markdown"],
+    "onlyMainContent": true
+  }
+  ```
+* **Headers**:
+
+  * `Authorization: Bearer <YOUR_FIRECRAWL_KEY>`
+  * `Content-Type: application/json`
+* **Output**:
+
+  * `data[0].markdown`: Page content
+
+
+
+
+## 🤝 Contributing
+
+Contributions, bug reports, and feature requests are **welcome**! Feel free to:
+
+* Open issues for bugs or suggestions
+* Submit pull requests
+* Improve documentation or add new workflows
+
+> **Note:** Third‑party API changes can cause occasional malfunctions. Please report issues so we can address them quickly.
+
+---
+
+## 📜 License
+
+MIT License – see [LICENSE](LICENSE) for details.
