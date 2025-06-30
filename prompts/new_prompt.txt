@@ -1,0 +1,13 @@
+Please write a concise summary about {{ $('extracting parameters').item.json.researchTopic }} based on the following information:
+
+{{ $json.data.markdown }}
+
+The summary should:
+
+- Include key fact
+- Be written in a professional tone
+- Be approximately 30-50 words
+- At maximum 50 words
+
+
+Make sure to maintain accuracy while expanding on the provided information.
